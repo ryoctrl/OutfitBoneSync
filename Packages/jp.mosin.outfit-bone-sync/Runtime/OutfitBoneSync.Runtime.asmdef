@@ -1,9 +1,10 @@
 {
-    "name": "VRChatPackageTemplate.Editor",
-    "references": [],
-    "includePlatforms": [
-        "Editor"
+    "name": "OutfitBoneSync.Runtime",
+    "rootNamespace": "",
+    "references": [
+        "VRC.SDKBase"
     ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

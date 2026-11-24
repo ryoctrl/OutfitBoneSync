@@ -1,0 +1,18 @@
+{
+  "name": "jp.mosin.outfit-bone-sync",
+  "displayName": "Outfit Bone Sync（衣装のボーン合わせ）",
+  "version": "0.1.0",
+  "unity": "2022.3",
+  "description": "ボーン（Armature）を改変したアバターに、改変前の体用の衣装を着せたときのずれを、アバターのボーンを変えた分だけ衣装のボーンも動かして合わせる Unity エディターのツールです。",
+  "author": {
+    "name": "ryoctrl",
+    "url": "https://github.com/ryoctrl"
+  },
+  "license": "MIT",
+  "licensesUrl": "https://github.com/ryoctrl/OutfitBoneSync/blob/main/LICENSE",
+  "documentationUrl": "https://github.com/ryoctrl/OutfitBoneSync/blob/main/Packages/jp.mosin.outfit-bone-sync/README.md",
+  "changelogUrl": "https://github.com/ryoctrl/OutfitBoneSync/releases",
+  "vpmDependencies": {
+    "com.vrchat.avatars": ">=3.7.0"
+  }
+}

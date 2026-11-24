@@ -1,0 +1,34 @@
+{
+    "name": "OutfitBoneSync.Editor",
+    "rootNamespace": "",
+    "references": [
+        "OutfitBoneSync.Runtime",
+        "VRC.SDKBase",
+        "VRC.SDK3A",
+        "nadena.dev.ndmf",
+        "nadena.dev.ndmf.runtime",
+        "nadena.dev.modular-avatar.core"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "nadena.dev.ndmf",
+            "expression": "1.0.0",
+            "define": "OBS_NDMF"
+        },
+        {
+            "name": "nadena.dev.modular-avatar",
+            "expression": "1.0.0",
+            "define": "OBS_MA"
+        }
+    ],
+    "noEngineReferences": false
+}

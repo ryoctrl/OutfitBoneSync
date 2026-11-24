@@ -1,0 +1,33 @@
+name: Dispatch Listing Build
+
+# Build Release が成功したら、一覧リポジトリ（ryoctrl/vpm-listing）の Build Repo Listing を起動して index.json を作り直す。
+# Secret LISTING_DISPATCH_TOKEN には、対象を ryoctrl/vpm-listing だけに絞り、権限を Actions: Read and write だけにした
+# Fine-grained personal access token を入れる。このリポジトリ自身の GITHUB_TOKEN は使わない。
+
+on:
+  workflow_run:
+    workflows: [Build Release]
+    types: [completed]
+  workflow_dispatch:
+
+permissions: {}
+
+env:
+  LISTING_REPOSITORY: ryoctrl/vpm-listing
+  LISTING_WORKFLOW: build-listing.yml
+
+jobs:
+  dispatch:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Build Repo Listing in the listing repository
+        env:
+          GH_TOKEN: ${{ secrets.LISTING_DISPATCH_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::Secret LISTING_DISPATCH_TOKEN is not set."
+            exit 1
+          fi
+          gh workflow run "$LISTING_WORKFLOW" -R "$LISTING_REPOSITORY" --ref main
+          echo "Started $LISTING_WORKFLOW in $LISTING_REPOSITORY."
