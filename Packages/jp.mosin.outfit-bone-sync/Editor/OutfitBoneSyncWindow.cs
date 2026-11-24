@@ -12,7 +12,6 @@ namespace OutfitBoneSync.Editor
     public class OutfitBoneSyncWindow : EditorWindow
     {
         [SerializeField] Transform _avatar;
-        [SerializeField] GameObject _reference;
         [SerializeField] bool _autoFollow = true;
         [SerializeField] List<Transform> _extra = new List<Transform>();
         [SerializeField] List<Transform> _selected = new List<Transform>();
@@ -28,9 +27,6 @@ namespace OutfitBoneSync.Editor
         readonly List<Transform> _sceneAvatars = new List<Transform>();
         readonly HashSet<Transform> _collapsed = new HashSet<Transform>();
         List<AvatarBoneChange> _avatarChanges = new List<AvatarBoneChange>();
-        string _referenceDescription = "";
-        List<ReferenceMiss> _referenceMisses = new List<ReferenceMiss>();
-        bool _showReferenceMisses;
         double _lastRefresh = -10;
         bool _dirty = true;
         bool _showAvatarChanges = true;
@@ -88,9 +84,6 @@ namespace OutfitBoneSync.Editor
             _avatar = avatar;
             _extra.Clear();
             _selected = BoneSyncCore.FindOutfitCandidates(avatar);
-            var existing = _selected.Select(x => x.GetComponent<OutfitBoneSync>())
-                .FirstOrDefault(x => x != null && x.referenceAvatar != null);
-            _reference = existing != null ? existing.referenceAvatar : null;
             _message = null;
             _dirty = true;
         }
@@ -131,8 +124,6 @@ namespace OutfitBoneSync.Editor
         {
             _entries.Clear();
             _avatarChanges = new List<AvatarBoneChange>();
-            _referenceDescription = "";
-            _referenceMisses = new List<ReferenceMiss>();
             _sceneAvatars.Clear();
             _sceneAvatars.AddRange(FindObjectsByType<VRC.SDKBase.VRC_AvatarDescriptor>(FindObjectsInactive.Include, FindObjectsSortMode.None)
                 .Where(x => !EditorUtility.IsPersistent(x))
@@ -154,16 +145,17 @@ namespace OutfitBoneSync.Editor
                 {
                     root = o,
                     comp = comp,
-                    plan = BoneSyncCore.Plan(o, _avatar, _reference, comp != null ? comp.records : null),
+                    // 基準アバターは Inspector で設定済みの衣装だけが使う
+                    plan = comp != null
+                        ? BoneSyncCore.Plan(o, _avatar, comp.referenceAvatar, comp.records)
+                        : BoneSyncCore.Plan(o, _avatar, null, null),
                 };
                 _entries.Add(entry);
                 if (IsSelected(entry))
                     foreach (var bp in entry.plan.bones)
                         if (bp.avatar != null) matched.Add(bp.avatar);
             }
-            _avatarChanges = BoneSyncCore.ListAvatarChanges(_avatar, _reference, matched);
-            _referenceDescription = new BoneSyncCore.ReferencePose(_avatar, _reference).Description;
-            _referenceMisses = BoneSyncCore.ListReferenceMisses(_avatar, _reference);
+            _avatarChanges = BoneSyncCore.ListAvatarChanges(_avatar, null, matched);
         }
 
         void OnGUI()
@@ -230,32 +222,11 @@ namespace OutfitBoneSync.Editor
                         ShowAvatarMenu(GUILayoutUtility.GetLastRect());
                 }
 
-                using (new EditorGUILayout.HorizontalScope())
-                {
-                    if (GUILayout.Button("選択中のオブジェクトから設定"))
-                    {
-                        var go = Selection.activeGameObject;
-                        if (go != null && !EditorUtility.IsPersistent(go)) SetFromSelection(go.transform);
-                    }
-                    using (new EditorGUI.DisabledScope(_avatar == null))
-                        if (GUILayout.Button("Hierarchy で選択")) Reveal(_avatar);
-                }
-
                 if (_avatar == null)
                 {
                     EditorGUILayout.HelpBox("アバター未指定", MessageType.Info);
                     return;
                 }
-
-                EditorGUILayout.LabelField("シーン", _avatar.gameObject.scene.name);
-
-                EditorGUI.BeginChangeCheck();
-                _reference = (GameObject)EditorGUILayout.ObjectField(
-                    new GUIContent("基準アバター（任意）", "改変前のアバター。未指定時は元 FBX のボーン値を基準値として使用"),
-                    _reference, typeof(GameObject), true);
-                if (EditorGUI.EndChangeCheck()) _dirty = true;
-                EditorGUILayout.LabelField("基準値の取得元", _referenceDescription);
-                BoneSyncGUI.DrawReferenceMisses(_avatar, _referenceMisses, ref _showReferenceMisses);
 
                 _showAvatarChanges = EditorGUILayout.Foldout(_showAvatarChanges,
                     $"変更済みボーン（{_avatarChanges.Count}）", true);
@@ -288,6 +259,15 @@ namespace OutfitBoneSync.Editor
                         if (now != sel) SetSelected(e.root, now);
                         BoneSyncGUI.ObjectLabel(e.root, GUILayout.Width(220));
                         GUILayout.Label(Status(e), EditorStyles.miniLabel);
+                        if (_extra.Contains(e.root) &&
+                            GUILayout.Button(new GUIContent("×", "一覧から削除（シーンは変更しない）"), GUILayout.Width(22)))
+                        {
+                            _extra.Remove(e.root);
+                            _selected.Remove(e.root);
+                            _dirty = true;
+                            // 行の数が変わるので、このイベントの残りは描かずに描き直す
+                            GUIUtility.ExitGUI();
+                        }
                     }
                 }
                 var add = (GameObject)EditorGUILayout.ObjectField("衣装を追加", null, typeof(GameObject), true);
@@ -301,14 +281,6 @@ namespace OutfitBoneSync.Editor
         }
 
         static readonly Color SelectedRowColor = new Color(0.24f, 0.48f, 0.9f, 0.3f);
-
-        /// <summary>Hierarchy で選択し、折りたたまれていれば開いて点滅させる。</summary>
-        static void Reveal(Transform t)
-        {
-            if (t == null) return;
-            Selection.activeTransform = t;
-            EditorGUIUtility.PingObject(t);
-        }
 
         static string Status(Entry e)
         {
@@ -406,7 +378,6 @@ namespace OutfitBoneSync.Editor
                 var c = e.comp != null ? e.comp : Undo.AddComponent<OutfitBoneSync>(e.root.gameObject);
                 Undo.RecordObject(c, "Outfit Bone Sync 適用");
                 c.avatarRoot = BoneSyncCore.FindAvatarRoot(e.root) == _avatar ? null : _avatar;
-                c.referenceAvatar = _reference;
                 c.autoFollow = _autoFollow;
                 EditorUtility.SetDirty(c);
                 if (PrefabUtility.IsPartOfPrefabInstance(c)) PrefabUtility.RecordPrefabInstancePropertyModifications(c);

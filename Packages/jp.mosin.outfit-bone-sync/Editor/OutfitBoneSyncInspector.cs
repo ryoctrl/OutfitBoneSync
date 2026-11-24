@@ -32,8 +32,10 @@ namespace OutfitBoneSync.Editor
 
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(OutfitBoneSync.avatarRoot)),
                 new GUIContent("アバター（手動指定）", "未指定時は親の VRC Avatar Descriptor を使用"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(OutfitBoneSync.referenceAvatar)),
-                new GUIContent("基準アバター（任意）", "改変前のアバター。未指定時は元 FBX のボーン値を基準値として使用"));
+            // 基準アバターは通常不要なので出さない。旧版で設定済みのときだけ、外せるように出す
+            if (c.referenceAvatar != null)
+                EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(OutfitBoneSync.referenceAvatar)),
+                    new GUIContent("基準アバター", "改変前のアバター。未指定時は元 FBX のボーン値を基準値として使用"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(OutfitBoneSync.autoFollow)),
                 new GUIContent("自動追従", "アバターのボーン変更時に再適用"));
             if (serializedObject.ApplyModifiedProperties())
@@ -58,8 +60,11 @@ namespace OutfitBoneSync.Editor
             }
             if (_plan == null) return;
 
-            EditorGUILayout.LabelField("基準値の取得元", _plan.referenceDescription);
-            BoneSyncGUI.DrawReferenceMisses(root, _misses, ref _showMisses);
+            if (c.referenceAvatar != null)
+            {
+                EditorGUILayout.LabelField("基準値の取得元", _plan.referenceDescription);
+                BoneSyncGUI.DrawReferenceMisses(root, _misses, ref _showMisses);
+            }
 
             EditorGUILayout.Space();
             using (new EditorGUILayout.HorizontalScope())
