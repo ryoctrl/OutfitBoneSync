@@ -95,7 +95,7 @@ namespace OutfitBoneSync.Editor
         // 折りたたんだボーン（ウィンドウと Inspector で共通）
         static readonly HashSet<int> Collapsed = new HashSet<int>();
 
-        const float NameWidth = 210;
+        const float NameWidth = 250;
         const float IndentWidth = 12;
 
         /// <summary>木を上から順に、深さ付きでたどる（折りたたんだボーンの子は飛ばす）。</summary>
@@ -128,11 +128,18 @@ namespace OutfitBoneSync.Editor
                     }
                 }
                 else GUILayout.Space(IndentWidth);
-                if (GUILayout.Button(new GUIContent(node.bone.name, "クリック: Hierarchy で表示"),
-                        node.hasItem ? EditorStyles.miniLabel : ParentStyle))
-                    EditorGUIUtility.PingObject(node.bone);
-                GUILayout.FlexibleSpace();
+                ObjectLabel(node.bone);
             }
+        }
+
+        /// <summary>
+        /// GameObject の欄（読み取り専用）。クリックで Hierarchy 上の物をハイライトする（Unity 標準の動作）。
+        /// 欄の値は変えられない。
+        /// </summary>
+        public static void ObjectLabel(Transform t, params GUILayoutOption[] options)
+        {
+            using (new EditorGUI.DisabledScope(true))
+                EditorGUILayout.ObjectField(t != null ? t.gameObject : null, typeof(GameObject), true, options);
         }
 
         /// <summary>
@@ -204,16 +211,10 @@ namespace OutfitBoneSync.Editor
             }
         }
 
-        static GUIStyle _changedStyle, _parentStyle;
+        static GUIStyle _changedStyle;
 
         // 行の高さがずれないように、miniLabel と同じ大きさ・余白のまま太字にする
         static GUIStyle ChangedStyle => _changedStyle ??= new GUIStyle(EditorStyles.miniLabel) { fontStyle = FontStyle.Bold };
-
-        // 値の変わらない親のボーンは薄い色にする
-        static GUIStyle ParentStyle => _parentStyle ??= new GUIStyle(EditorStyles.miniLabel)
-        {
-            normal = { textColor = new Color(0.5f, 0.5f, 0.5f) },
-        };
 
         public static string Fmt(Vector3 v) => $"({v.x:0.####}, {v.y:0.####}, {v.z:0.####})";
 

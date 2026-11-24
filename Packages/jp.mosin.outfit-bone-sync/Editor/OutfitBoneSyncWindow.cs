@@ -286,10 +286,7 @@ namespace OutfitBoneSync.Editor
                         bool sel = IsSelected(e);
                         bool now = EditorGUILayout.Toggle(sel, GUILayout.Width(18));
                         if (now != sel) SetSelected(e.root, now);
-                        if (GUILayout.Button(new GUIContent(e.root.name, "クリック: Hierarchy で選択"), EditorStyles.linkLabel,
-                                GUILayout.Width(200)))
-                            Reveal(e.root);
-                        EditorGUIUtility.AddCursorRect(GUILayoutUtility.GetLastRect(), MouseCursor.Link);
+                        BoneSyncGUI.ObjectLabel(e.root, GUILayout.Width(220));
                         GUILayout.Label(Status(e), EditorStyles.miniLabel);
                     }
                 }
@@ -339,11 +336,17 @@ namespace OutfitBoneSync.Editor
                     EditorGUILayout.Space(4);
                     int n = e.plan.ChangeCount;
                     int applied = e.plan.bones.Count(x => x.DiffersFromOriginal);
-                    string title = n > 0 ? $"{e.root.name}（変更 {n}）"
-                        : e.comp != null ? $"{e.root.name}（適用済み / 変更済み {applied}）"
-                        : $"{e.root.name}（変更なし）";
+                    string title = n > 0 ? $"変更 {n}"
+                        : e.comp != null ? $"適用済み / 変更済み {applied}"
+                        : "変更なし";
                     bool open = !_collapsed.Contains(e.root);
-                    bool nowOpen = EditorGUILayout.Foldout(open, title, true, EditorStyles.foldoutHeader);
+                    bool nowOpen;
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        nowOpen = GUILayout.Toggle(open, GUIContent.none, EditorStyles.foldout, GUILayout.Width(14));
+                        BoneSyncGUI.ObjectLabel(e.root, GUILayout.Width(220));
+                        GUILayout.Label(title, EditorStyles.boldLabel);
+                    }
                     if (nowOpen != open)
                     {
                         if (nowOpen) _collapsed.Remove(e.root);
