@@ -238,7 +238,7 @@ namespace OutfitBoneSync.Editor
                         if (go != null && !EditorUtility.IsPersistent(go)) SetFromSelection(go.transform);
                     }
                     using (new EditorGUI.DisabledScope(_avatar == null))
-                        if (GUILayout.Button("Hierarchy で表示")) EditorGUIUtility.PingObject(_avatar);
+                        if (GUILayout.Button("Hierarchy で選択")) Reveal(_avatar);
                 }
 
                 if (_avatar == null)
@@ -278,14 +278,18 @@ namespace OutfitBoneSync.Editor
                     EditorGUILayout.HelpBox("アバター直下に衣装なし。「衣装を追加」で指定。", MessageType.Info);
                 foreach (var e in _entries)
                 {
-                    using (new EditorGUILayout.HorizontalScope())
+                    using (var row = new EditorGUILayout.HorizontalScope())
                     {
+                        // Hierarchy で選択中の衣装の行は背景を付ける（Hierarchy 側で選んだときも同じ）
+                        if (Event.current.type == EventType.Repaint && Selection.transforms.Contains(e.root))
+                            EditorGUI.DrawRect(row.rect, SelectedRowColor);
                         bool sel = IsSelected(e);
                         bool now = EditorGUILayout.Toggle(sel, GUILayout.Width(18));
                         if (now != sel) SetSelected(e.root, now);
-                        if (GUILayout.Button(new GUIContent(e.root.name, "クリック: Hierarchy で表示"), EditorStyles.label,
+                        if (GUILayout.Button(new GUIContent(e.root.name, "クリック: Hierarchy で選択"), EditorStyles.linkLabel,
                                 GUILayout.Width(200)))
-                            EditorGUIUtility.PingObject(e.root);
+                            Reveal(e.root);
+                        EditorGUIUtility.AddCursorRect(GUILayoutUtility.GetLastRect(), MouseCursor.Link);
                         GUILayout.Label(Status(e), EditorStyles.miniLabel);
                     }
                 }
@@ -297,6 +301,16 @@ namespace OutfitBoneSync.Editor
                     _dirty = true;
                 }
             }
+        }
+
+        static readonly Color SelectedRowColor = new Color(0.24f, 0.48f, 0.9f, 0.3f);
+
+        /// <summary>Hierarchy で選択し、折りたたまれていれば開いて点滅させる。</summary>
+        static void Reveal(Transform t)
+        {
+            if (t == null) return;
+            Selection.activeTransform = t;
+            EditorGUIUtility.PingObject(t);
         }
 
         static string Status(Entry e)
